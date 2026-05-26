@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Combine
 
 struct DatingSimGameView: View {
     @StateObject private var vm = DatingSimViewModel()
@@ -22,7 +21,9 @@ struct DatingSimGameView: View {
                     .font(.largeTitle.bold())
                     .foregroundColor(Theme.textPrimary)
 
-                if vm.phase == .prologue || vm.phase == .dayEnd || vm.phase == .dayStart {
+                if vm.phase == .prologue && !vm.nameEntered {
+                    nameInputView
+                } else if vm.phase == .prologue || vm.phase == .dayEnd || vm.phase == .dayStart {
                     dialogueBox
                 } else if vm.phase == .characterSelect {
                     characterSelectView
@@ -34,7 +35,27 @@ struct DatingSimGameView: View {
 
                 Spacer()
 
-                if !vm.gameOver, vm.phase == .prologue || vm.phase == .dayEnd || vm.phase == .dayStart {
+                if vm.phase == .scene && !vm.choices.isEmpty {
+                    // choices shown inside sceneView
+                } else if vm.phase == .scene && vm.choices.isEmpty {
+                    Button("Continue") {
+                        withAnimation { vm.advance() }
+                    }
+                    .font(.headline)
+                    .padding(.horizontal, 30)
+                    .padding(.vertical, 12)
+                    .background(Capsule().fill(Theme.ticTacToeButton))
+                    .foregroundColor(Theme.textPrimary)
+                } else if vm.phase == .prologue && vm.nameEntered {
+                    Button("Begin") {
+                        withAnimation { vm.advance() }
+                    }
+                    .font(.headline)
+                    .padding(.horizontal, 30)
+                    .padding(.vertical, 12)
+                    .background(Capsule().fill(Theme.ticTacToeButton))
+                    .foregroundColor(Theme.textPrimary)
+                } else if vm.phase == .dayEnd || vm.phase == .dayStart {
                     Button("Continue") {
                         withAnimation { vm.advance() }
                     }
@@ -54,6 +75,28 @@ struct DatingSimGameView: View {
                     .font(.headline)
                     .foregroundColor(Theme.textPrimary)
             }
+        }
+    }
+
+    var nameInputView: some View {
+        VStack(spacing: 16) {
+            Text(vm.currentDialogue)
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .foregroundColor(Theme.textPrimary)
+            TextField("Your name", text: $vm.playerName)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal, 40)
+                .autocorrectionDisabled()
+            Button("Confirm") {
+                vm.confirmName()
+            }
+            .font(.headline)
+            .padding(.horizontal, 30)
+            .padding(.vertical, 12)
+            .background(Capsule().fill(Theme.cardBlueStart))
+            .foregroundColor(.white)
+            .disabled(vm.playerName.trimmingCharacters(in: .whitespaces).isEmpty)
         }
     }
 
@@ -110,15 +153,17 @@ struct DatingSimGameView: View {
                 .multilineTextAlignment(.center)
                 .foregroundColor(Theme.textPrimary)
                 .padding()
-            ForEach(Array(vm.choices.enumerated()), id: \.offset) { index, choice in
-                Button(choice) {
-                    withAnimation { vm.makeSceneChoice(index) }
+            if !vm.choices.isEmpty {
+                ForEach(Array(vm.choices.enumerated()), id: \.offset) { index, choice in
+                    Button(choice) {
+                        withAnimation { vm.makeSceneChoice(index) }
+                    }
+                    .font(.headline)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.ticTacToeButton))
+                    .foregroundColor(Theme.textPrimary)
                 }
-                .font(.headline)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.ticTacToeButton))
-                .foregroundColor(Theme.textPrimary)
             }
         }
     }
